@@ -105,3 +105,10 @@ Version 1.0 (11/12/2013)
  - initial version corresponding to ICCV paper
 
 ###################################################################
+
+6. Fork by Samarth Brahmbhatt
+
+This fork was made to:
+ - Test the performance of edge-boxes with Canny edges
+ - Make a C++ implementation of edge-boxes with Canny edges, using OpenCV for util tasks
+ - Include existing C++ implementation of structured random forest edges at http://www.philkr.net/home/gop, and integrate it with the C++ implementation of edge-boxes to construct a fully working C++ implementation of edge-boxes
