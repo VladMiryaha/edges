@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
     }
     Mat img, imc, ime;
     cvtColor(im, img, CV_RGB2GRAY);
-    Canny(img, imc, 0.1, 0.2);
+    Canny(img, imc, 100, 250);
 
     imshow("Image", im);
     imshow("Canny", imc);
@@ -486,7 +486,9 @@ int main(int argc, char **argv) {
     edgeBoxGen._minBoxArea = 1000;
     edgeBoxGen._gamma = 2;
     edgeBoxGen._kappa = 1.5;
+    cout << "Generating boxes ..." << endl;
     edgeBoxGen.generate( boxes, E, O, V );
+    cout << "Generated boxes" << endl;
 
     // create output bbs
     int n = (int) boxes.size();
@@ -499,6 +501,17 @@ int main(int argc, char **argv) {
         bbs[ i + 3*n ] = (float) boxes[i].h;
         bbs[ i + 4*n ] = boxes[i].s;
     }
+
+    // show the bbs
+    int n_show = 15;
+    Mat im_show = im.clone();
+    for(int i = 0; i < n_show; i++) {
+        Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));
+        rectangle(im_show, p1, p2, Scalar(0, 255, 0));
+    }
+
+    imshow("Edge-Boxes", im_show);
+    waitKey(-1);
 
     delete []bbs;
 }
