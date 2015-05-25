@@ -444,7 +444,7 @@ int main(int argc, char **argv) {
 
     imshow("Image", im);
     imshow("Canny", imc);
-    waitKey(-1);
+    //waitKey(-1);
 
     imc.convertTo(ime, CV_32F, 1/255.f);
 
@@ -487,8 +487,10 @@ int main(int argc, char **argv) {
     edgeBoxGen._gamma = 2;
     edgeBoxGen._kappa = 1.5;
     cout << "Generating boxes ..." << endl;
+    double t = (double)getTickCount();
     edgeBoxGen.generate( boxes, E, O, V );
-    cout << "Generated boxes" << endl;
+    t = ((double)getTickCount() - t)/getTickFrequency();
+    cout << "Generated boxes, t = " << t*1000 << " ms" << endl;
 
     // create output bbs
     int n = (int) boxes.size();
@@ -507,7 +509,8 @@ int main(int argc, char **argv) {
     Mat im_show = im.clone();
     for(int i = 0; i < n_show; i++) {
         Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));
-        rectangle(im_show, p1, p2, Scalar(0, 255, 0));
+        Scalar color(rand()&255, rand()&255, rand()&255);
+        rectangle(im_show, p1, p2, color);
     }
 
     imshow("Edge-Boxes", im_show);
@@ -515,54 +518,3 @@ int main(int argc, char **argv) {
 
     delete []bbs;
 }
-
-/*
-// Matlab entry point: bbs = mex( E, O, prm1, prm2, ... )
-void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
-{
-  // check and get inputs
-  if(nr != 14) mexErrMsgTxt("Fourteen inputs required.");
-  if(nl > 2) mexErrMsgTxt("At most two outputs expected.");
-  if(mxGetClassID(pr[0])!=mxSINGLE_CLASS) mexErrMsgTxt("E must be a float*");
-  if(mxGetClassID(pr[1])!=mxSINGLE_CLASS) mexErrMsgTxt("O must be a float*");
-  arrayf E; E._x = (float*) mxGetData(pr[0]);
-  arrayf O; O._x = (float*) mxGetData(pr[1]);
-  int h = (int) mxGetM(pr[0]); O._h=E._h=h;
-  int w = (int) mxGetN(pr[0]); O._w=E._w=w;
-
-  // optionally create memory for visualization
-  arrayf V; if( nl>1 ) {
-    const int ds[3] = {h,w,3};
-    pl[1] = mxCreateNumericArray(3,ds,mxSINGLE_CLASS,mxREAL);
-    V._x = (float*) mxGetData(pl[1]); V._h=h; V._w=w;
-  }
-
-  // setup and run EdgeBoxGenerator
-  EdgeBoxGenerator edgeBoxGen; Boxes boxes;
-  edgeBoxGen._alpha = float(mxGetScalar(pr[2]));
-  edgeBoxGen._beta = float(mxGetScalar(pr[3]));
-  edgeBoxGen._eta = float(mxGetScalar(pr[4]));
-  edgeBoxGen._minScore = float(mxGetScalar(pr[5]));
-  edgeBoxGen._maxBoxes = int(mxGetScalar(pr[6]));
-  edgeBoxGen._edgeMinMag = float(mxGetScalar(pr[7]));
-  edgeBoxGen._edgeMergeThr = float(mxGetScalar(pr[8]));
-  edgeBoxGen._clusterMinMag = float(mxGetScalar(pr[9]));
-  edgeBoxGen._maxAspectRatio = float(mxGetScalar(pr[10]));
-  edgeBoxGen._minBoxArea = float(mxGetScalar(pr[11]));
-  edgeBoxGen._gamma = float(mxGetScalar(pr[12]));
-  edgeBoxGen._kappa = float(mxGetScalar(pr[13]));
-  edgeBoxGen.generate( boxes, E, O, V );
-
-  // create output bbs and output to Matlab
-  int n = (int) boxes.size();
-  pl[0] = mxCreateNumericMatrix(n,5,mxSINGLE_CLASS,mxREAL);
-  float *bbs = (float*) mxGetData(pl[0]);
-  for(int i=0; i<n; i++) {
-    bbs[ i + 0*n ] = (float) boxes[i].c+1;
-    bbs[ i + 1*n ] = (float) boxes[i].r+1;
-    bbs[ i + 2*n ] = (float) boxes[i].w;
-    bbs[ i + 3*n ] = (float) boxes[i].h;
-    bbs[ i + 4*n ] = boxes[i].s;
-  }
-}
-*/

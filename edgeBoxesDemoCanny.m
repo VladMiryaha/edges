@@ -12,7 +12,7 @@ opts.minScore = .01;  % min score of boxes to detect
 opts.maxBoxes = 1e4;  % max number of boxes to detect
 
 %% detect Edge Box bounding box proposals (see edgeBoxes.m)
-I = imread('test1.jpg');
+I = imread('kitchen.jpg');
 tic, bbs=edgeBoxesCanny(I,model,opts); toc
 
 n = 10;

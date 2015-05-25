@@ -2,7 +2,7 @@ function bbs = edgeBoxes( I, model, varargin )
 % Generate Edge Boxes object proposals in given image(s).
 %
 % Compute Edge Boxes object proposals as described in:
-%  C. Lawrence Zitnick and Piotr Dollár
+%  C. Lawrence Zitnick and Piotr Dollï¿½r
 %  "Edge Boxes: Locating Object Proposals from Edges", ECCV 2014.
 % The proposal boxes are fast to compute and give state-of-the-art recall.
 % Please cite the above paper if you end up using the code.
@@ -18,7 +18,7 @@ function bbs = edgeBoxes( I, model, varargin )
 % We recently introduced an adaptive variant of nms that results in better
 % Average Recall (AR) and also better subsequent detection performance.
 % This variant is described in Section 5.E of the following paper:
-%  Jan Hosang, Rodrigo Benenson, Piotr Dollár, and Bernt Schiele
+%  Jan Hosang, Rodrigo Benenson, Piotr Dollï¿½r, and Bernt Schiele
 %  "What makes for effective detection proposals?", arXiv 2015.
 % TL;DR: to get top AR for 1000 boxes set alpha=.65, beta=.90, eta=.9996.
 %
