@@ -6,10 +6,6 @@
 
 // Modified by Samarth Brahmbhatt to remove MEX parts
 
-#include "math.h"
-#include <algorithm>
-#include <vector>
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -18,6 +14,12 @@
 
 using namespace std;
 using namespace cv;
+
+template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
+void eigen2cv(Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, Mat& dst) {
+    Mat _src(src.rows(), src.cols(), DataType<_Tp>::type, (void*)src.data(), src.stride()*sizeof(_Tp));
+    _src.copyTo(dst);
+}
 
 int main(int argc, char **argv) {
     if(argc == 1) {
@@ -40,6 +42,23 @@ int main(int argc, char **argv) {
     cout << "GOP execution started..." << endl;  
     RMatrixXf im_gop_e = detector.detectAndFilter(im_8u);
     cout << "GOP execution finished" << endl;  
+
+    cout << "Edge matrix has size " << im_gop_e.rows() << " x " << im_gop_e.cols() << " and size is " << im_gop_e.size() << endl;
+
+    Eigen::MatrixXf::Index r, c;
+    float max = im_gop_e.maxCoeff(&r, &c);
+    cout << "Max = " << max << " at (" << r << ", " << c << ")" << endl;
+    float min = im_gop_e.minCoeff(&r, &c);
+    cout << "Min = " << min << " at (" << r << ", " << c << ")" << endl;
+
+    Mat im_e;
+    eigen2cv(im_gop_e, im_e);
+    cout << im_e.size() << endl;
+
+    Mat im_e_show;
+    im_e.convertTo(im_e_show, CV_8U, 255);
+    imshow("Edges", im_e_show);
+    waitKey(-1);
 
     return 0;
 }
