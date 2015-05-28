@@ -12,11 +12,12 @@
 #include <vector>
 #include <string>
 
-#include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #include "MatlabIO.hpp"
 #include "MatlabIOContainer.hpp"
+
+#include "edge_detect.h"
 
 using namespace std;
 using namespace cv;
@@ -483,14 +484,13 @@ int main(int argc, char **argv) {
     	if(variables[i].name().compare("E") == 0) ime = variables[i].data<Mat>();
     	if(variables[i].name().compare("O") == 0) grad_ori = variables[i].data<Mat>();
     }
+
+    vis_matrix(ime, "E");
+    Mat im_e_nms = edge_nms(ime, grad_ori, 2, 0, 1, 4);
+    vis_matrix(im_e_nms, "E nms");
+
     transpose(ime, ime_t);
     transpose(grad_ori, grad_ori_t);
-
-    // debug
-    Mat ime_show;
-    ime.convertTo(ime_show, CV_8U, 255);
-    imshow("Edges", ime_show);
-    waitKey(-1);
 
     arrayf E; E._x = ime_t.ptr<float>();
     arrayf O; O._x = grad_ori_t.ptr<float>();
@@ -542,7 +542,9 @@ int main(int argc, char **argv) {
     }
 
     imshow("Edge-Boxes", im_show);
-    waitKey(-1);
+    
+    char choice = 'a';
+    while(waitKey(1) != 'q') {}
 
     delete []bbs;
 

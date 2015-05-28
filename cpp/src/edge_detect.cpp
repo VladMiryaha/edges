@@ -15,8 +15,9 @@
 using namespace std;
 using namespace cv;
 
+// function to convert Eigen matrix to OpenCV Mat
 template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
-void eigen2cv(Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, Mat& dst) {
+void eigen2cv(Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& src, cv::Mat& dst) {
     Mat _src(src.rows(), src.cols(), DataType<_Tp>::type, (void*)src.data(), src.stride()*sizeof(_Tp));
     _src.copyTo(dst);
 }
@@ -27,7 +28,9 @@ Mat sf_edges(Mat& im) {
     cvtColor(im, im_rgb, CV_BGR2RGB);
     Image8u im_8u(im_rgb.data, im_rgb.cols, im_rgb.rows, im_rgb.channels());
 
-    MultiScaleStructuredForest detector;
+    // StructuredForestSettings sf_settings(stride, shrink, out_patch_size, feature_patch_size, patch_smooth, sim_smooth, sim_cells);
+    StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
+    MultiScaleStructuredForest detector(0, -1, sf_settings);
     detector.load("/home/samarth/research/gop_1.3/data/sf.dat");
     RMatrixXf im_gop_e = detector.detectAndFilter(im_8u);
 
@@ -36,41 +39,6 @@ Mat sf_edges(Mat& im) {
 
     return im_e;
 }
-
-// function to calculate the numerical gradient of a matrix in X and  Y directions
-void gradient(Mat &I, Mat &gx, Mat &gy) {
-    gx = Mat(I.rows, I.cols, CV_32FC1);
-    gy = Mat(I.rows, I.cols, CV_32FC1);
-    
-    // compute rows of Gy 
-    for(int i = 1; i < I.rows-1; i++) gy.row(i) = (I.row(i+1) - I.row(i-1)) * 0.5;
-    gy.row(0) = I.row(1) - I.row(0);
-    gy.row(gy.rows-1) = I.row(I.rows-1) - I.row(I.rows-2);
-
-    // compute the columns of Gx
-    for(int i = 1; i < I.cols-1; i++) gx.col(i) = (I.col(i+1) - I.col(i-1)) * 0.5;
-    gx.col(0) = I.col(1) - I.col(0);
-    gx.col(gx.cols-1) = I.col(I.cols-1) - I.col(I.cols-2);
-}
-
-void vis_matrix(Mat &m, char *window_name) {
-    double min_val, max_val;
-    minMaxLoc(m, &min_val, &max_val);
-    Mat m_show;
-    convertScaleAbs(m-min_val, m_show, 255.0/(max_val - min_val));
-    namedWindow(window_name, WINDOW_NORMAL);
-    imshow(window_name, m_show);
-}
-
-Mat signum(Mat &src) {
-    Mat dst = Mat::zeros(src.size(), CV_32FC1);
-    add(dst, 1, dst, src>0);
-    add(dst, -1, dst, src<0);
-    //dst += ((src > 0) & 1);
-    //dst -= ((src < 0) & 1);
-
-    return dst;
-} 
 
 Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetect.m
     int r = 4;
@@ -94,6 +62,7 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
     //vis_matrix(Oy, "Oy");
 
     //O=mod(atan(Oyy.*sign(-Oxy)./(Oxx+1e-5)),pi);
+    /*
     Mat M, O;
     cartToPolar(Oxx + 1e-5, Oyy.mul(-signum(Oxy)), M, O);
     // convert from atan2 to atan
@@ -102,19 +71,24 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
     // mod pi
     add(O, PI, O, O<0);
     //O += PI*((O < 0) & 1);
+    */
+    Mat M, O;
+    cartToPolar(Oxx + 1e-7, Oyy, M, O);
+    //O -= PI * ((O > PI) & 1);
+    add(O, -PI, O, O>PI);
     return O;
 }
 
 void edge_detect(Mat &im, Mat &E, Mat &O) {
     // get structured forest edges
     E = sf_edges(im);
-    //vis_matrix(E, "E");
+    vis_matrix(E, "E");
     // get edge orientation
     O = coarse_ori(E);
-    //vis_matrix(O, "O");
+    vis_matrix(O, "O");
     // NMS on edges
-    //E = edge_nms(E, O, 2, 0, 1, 4); 
-    //vis_matrix(E, "E_nms");
+    E = edge_nms(E, O, 2, 0, 1, 4); 
+    vis_matrix(E, "E_nms");
 }
 
 /*

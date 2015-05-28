@@ -23,6 +23,9 @@ inline float interp( float *I, int h, int w, float x, float y ) {
 }
 
 // E = mexFunction(E,O,r,s,m,nThreads)
+// r: Radius for NMS suppression
+// s: Radius for boundary suppression
+// m = multipier for conservative suppression
 void mexFunction(float *E0, float *O, float *E, int r, int s, float m, int nThreads, int h, int w) {
     // suppress edges where edge is stronger in orthogonal direction
 #ifdef USEOMP
