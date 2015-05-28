@@ -10,8 +10,9 @@
 #include <algorithm>
 #include <vector>
 
-#include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#include "edge_detect.h"
 
 using namespace std;
 using namespace cv;
@@ -433,29 +434,15 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    Mat im = imread(argv[1]);
+    Mat im = imread(argv[1]), ime, grad_ori, ime_t, grad_ori_t;
     if(im.data == NULL) {
         cout << "Error reading image" << endl;
         return -1;
     }
-    Mat img, imc, ime;
-    cvtColor(im, img, CV_RGB2GRAY);
-    Canny(img, imc, 100, 250);
 
-    imshow("Image", im);
-    imshow("Canny", imc);
-    //waitKey(-1);
+    edge_detect(im, ime, grad_ori);
+    vis_matrix(ime, "E");
 
-    imc.convertTo(ime, CV_32F, 1/255.f);
-
-    // get gradient magnitudes and orientations
-    Mat grad_x, grad_y, grad_mag, grad_ori;
-    Sobel(img, grad_x, CV_32F, 1, 0, 3);
-    Sobel(img, grad_y, CV_32F, 0, 1, 3);
-    cartToPolar(grad_x, grad_y, grad_mag, grad_ori);
-    grad_ori = abs(PI - grad_ori);
-
-    Mat ime_t, grad_ori_t;
     transpose(ime, ime_t);
     transpose(grad_ori, grad_ori_t);
 

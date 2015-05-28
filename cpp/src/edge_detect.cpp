@@ -6,11 +6,11 @@
 
 // Modified by Samarth Brahmbhatt to remove MEX parts
 
-#include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #include "contour/structuredforest.h"
 #include "imgproc/image.h"
+#include "edge_detect.h"
 
 using namespace std;
 using namespace cv;
@@ -37,52 +37,44 @@ Mat sf_edges(Mat& im) {
     return im_e;
 }
 
-// compute x and y gradients for just one column (uses sse)
-void grad1( float *I, float *Gx, float *Gy, int h, int w, int x ) {
-    int y, y1; float *Ip, *In, r; __m128 *_Ip, *_In, *_G, _r;
-    // compute column of Gx
-    Ip=I-h; In=I+h; r=.5f;
-    if(x==0) { r=1; Ip+=h; } else if(x==w-1) { r=1; In-=h; }
-    if( h<4 || h%4>0 || (size_t(I)&15) || (size_t(Gx)&15) ) {
-        for( y=0; y<h; y++ ) *Gx++=(*In++-*Ip++)*r;
-    } else {
-        _G=(__m128*) Gx; _Ip=(__m128*) Ip; _In=(__m128*) In; _r = SET(r);
-        for(y=0; y<h; y+=4) *_G++=MUL(SUB(*_In++,*_Ip++),_r);
-    }
-    // compute column of Gy
-#define GRADY(r) *Gy++=(*In++-*Ip++)*r;
-    Ip=I; In=Ip+1;
-    // GRADY(1); Ip--; for(y=1; y<h-1; y++) GRADY(.5f); In--; GRADY(1);
-    y1=((~((size_t) Gy) + 1) & 15)/4; if(y1==0) y1=4; if(y1>h-1) y1=h-1;
-    GRADY(1); Ip--; for(y=1; y<y1; y++) GRADY(.5f);
-    _r = SET(.5f); _G=(__m128*) Gy;
-    for(; y+4<h-1; y+=4, Ip+=4, In+=4, Gy+=4)
-        *_G++=MUL(SUB(LDu(*In),LDu(*Ip)),_r);
-    for(; y<h-1; y++) GRADY(.5f); In--; GRADY(1);
-#undef GRADY
-}
-
-void grad2(float *I, float *Gx, float *Gy, int h, int w, int d) {
-    int o, x, c, a=w*h; for(c=0; c<d; c++) for(x=0; x<w; x++) {
-        o=c*a+x*h; grad1( I+o, Gx+o, Gy+o, h, w, x );
-    }
-}
-
-void gradient(Mat I, Mat &gx, Mat &gy) {
-    if(I.type() != CV_32FC1) {
-        cout << "Input matrix is not CV_32FC1" << endl;
-        return;
-    }
+// function to calculate the numerical gradient of a matrix in X and  Y directions
+void gradient(Mat &I, Mat &gx, Mat &gy) {
     gx = Mat(I.rows, I.cols, CV_32FC1);
     gy = Mat(I.rows, I.cols, CV_32FC1);
-    grad2(I.data, gx.data, gy.data, I.rows, I.cols, 1);
+    
+    // compute rows of Gy 
+    for(int i = 1; i < I.rows-1; i++) gy.row(i) = (I.row(i+1) - I.row(i-1)) * 0.5;
+    gy.row(0) = I.row(1) - I.row(0);
+    gy.row(gy.rows-1) = I.row(I.rows-1) - I.row(I.rows-2);
+
+    // compute the columns of Gx
+    for(int i = 1; i < I.cols-1; i++) gx.col(i) = (I.col(i+1) - I.col(i-1)) * 0.5;
+    gx.col(0) = I.col(1) - I.col(0);
+    gx.col(gx.cols-1) = I.col(I.cols-1) - I.col(I.cols-2);
 }
+
+void vis_matrix(Mat &m, char *window_name) {
+    double min_val, max_val;
+    minMaxLoc(m, &min_val, &max_val);
+    Mat m_show;
+    convertScaleAbs(m-min_val, m_show, 255.0/(max_val - min_val));
+    namedWindow(window_name, WINDOW_NORMAL);
+    imshow(window_name, m_show);
+}
+
+Mat signum(Mat &src) {
+    Mat dst = Mat::zeros(src.size(), CV_32FC1);
+    add(dst, 1, dst, src>0);
+    add(dst, -1, dst, src<0);
+    //dst += ((src > 0) & 1);
+    //dst -= ((src < 0) & 1);
+
+    return dst;
+} 
 
 Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetect.m
     int r = 4;
-    cout << E.size() << endl;
     copyMakeBorder(E, E, r, r, r, r, BORDER_REFLECT);
-    cout << E.size() << endl;
 
     //f = [1:r r+1 r:-1:1]/(r+1)^2;
     Mat f = (r+1) * Mat::ones(1, 2*r+1, CV_32F);
@@ -90,16 +82,39 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
         f.at<float>(0, i) = i+1;
         f.at<float>(0, f.cols-i-1) = i+1;
     }
-    sepFilter2D(E, E, CV_32F, f, f.T());
+    sepFilter2D(E, E, CV_32F, f, f.t());
+    //vis_matrix(E, "E_conv");
 
     Mat Ox, Oy, Oxx, Oxy, Oyy;
     gradient(E, Ox, Oy);
     gradient(Ox, Oxx, Oxy);
     gradient(Oy, Oxy, Oyy);
 
-    Mat O;
-    //O=mod(atan(Oyy.*sign(-Oxy)./(Oxx+1e-5)),pi);
+    //vis_matrix(Ox, "Ox");
+    //vis_matrix(Oy, "Oy");
 
+    //O=mod(atan(Oyy.*sign(-Oxy)./(Oxx+1e-5)),pi);
+    Mat M, O;
+    cartToPolar(Oxx + 1e-5, Oyy.mul(-signum(Oxy)), M, O);
+    // convert from atan2 to atan
+    add(O, -PI, O, Oxx<0);
+    //O -= PI*((Oxx < 0) & 1);
+    // mod pi
+    add(O, PI, O, O<0);
+    //O += PI*((O < 0) & 1);
+    return O;
+}
+
+void edge_detect(Mat &im, Mat &E, Mat &O) {
+    // get structured forest edges
+    E = sf_edges(im);
+    // get edge orientation
+    O = coarse_ori(E);
+    // NMS on edges
+    E = edge_nms(E, O, 2, 0, 1, 4); 
+}
+
+/*
 int main(int argc, char **argv) {
     if(argc == 1) {
         cout << "Usage: ./edge_boxes image_file" << endl;
@@ -113,11 +128,14 @@ int main(int argc, char **argv) {
     }
 
     Mat im_e = sf_edges(im);
+    vis_matrix(im_e, "E");
 
-    Mat im_e_show;
-    im_e.convertTo(im_e_show, CV_8U, 255);
-    imshow("Edges", im_e_show);
+    Mat O = coarse_ori(im_e);
+
+    Mat im_e_nms = edge_nms(im_e, O, 2, 0, 1, 4);
+    vis_matrix(im_e_nms, "E_nms");
+
     waitKey(-1);
-
     return 0;
 }
+*/
