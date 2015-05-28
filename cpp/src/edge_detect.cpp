@@ -108,10 +108,13 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
 void edge_detect(Mat &im, Mat &E, Mat &O) {
     // get structured forest edges
     E = sf_edges(im);
+    //vis_matrix(E, "E");
     // get edge orientation
     O = coarse_ori(E);
+    //vis_matrix(O, "O");
     // NMS on edges
-    E = edge_nms(E, O, 2, 0, 1, 4); 
+    //E = edge_nms(E, O, 2, 0, 1, 4); 
+    //vis_matrix(E, "E_nms");
 }
 
 /*

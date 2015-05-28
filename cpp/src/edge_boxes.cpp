@@ -441,7 +441,7 @@ int main(int argc, char **argv) {
     }
 
     edge_detect(im, ime, grad_ori);
-    vis_matrix(ime, "E");
+    //vis_matrix(ime, "E");
 
     transpose(ime, ime_t);
     transpose(grad_ori, grad_ori_t);
@@ -501,7 +501,9 @@ int main(int argc, char **argv) {
     }
 
     imshow("Edge-Boxes", im_show);
-    waitKey(-1);
+    
+    char choice = 'a';
+    while(waitKey(1) != 'q') {}
 
     delete []bbs;
 }
