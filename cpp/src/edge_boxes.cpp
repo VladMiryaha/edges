@@ -492,7 +492,7 @@ int main(int argc, char **argv) {
     }
 
     // show the bbs
-    int n_show = 10;
+    int n_show = 20;
     Mat im_show = im.clone();
     for(int i = 0; i < n_show; i++) {
         Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));

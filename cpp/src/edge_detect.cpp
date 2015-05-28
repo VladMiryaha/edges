@@ -30,7 +30,7 @@ Mat sf_edges(Mat& im) {
 
     // StructuredForestSettings sf_settings(stride, shrink, out_patch_size, feature_patch_size, patch_smooth, sim_smooth, sim_cells);
     StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
-    MultiScaleStructuredForest detector(0, -1, sf_settings);
+    MultiScaleStructuredForest detector(1, -1, sf_settings);
     detector.load("/home/samarth/research/gop_1.3/data/sf.dat");
     RMatrixXf im_gop_e = detector.detectAndFilter(im_8u);
 
@@ -86,9 +86,10 @@ void edge_detect(Mat &im, Mat &E, Mat &O) {
     // get edge orientation
     O = coarse_ori(E);
     vis_matrix(O, "O");
+    E.setTo(0, E < 0.5);
     // NMS on edges
-    E = edge_nms(E, O, 2, 0, 1, 4); 
-    vis_matrix(E, "E_nms");
+    //E = edge_nms(E, O, 2, 0, 1, 4); 
+    //vis_matrix(E, "E_nms");
 }
 
 /*
