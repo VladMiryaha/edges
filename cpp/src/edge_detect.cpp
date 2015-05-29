@@ -82,38 +82,12 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
 void edge_detect(Mat &im, Mat &E, Mat &O) {
     // get structured forest edges
     E = sf_edges(im);
-    vis_matrix(E, "E");
+    E.setTo(0, E < 0.5);
+    //vis_matrix(E, "E");
     // get edge orientation
     O = coarse_ori(E);
-    vis_matrix(O, "O");
-    E.setTo(0, E < 0.5);
+    //vis_matrix(O, "O");
     // NMS on edges
     //E = edge_nms(E, O, 2, 0, 1, 4); 
     //vis_matrix(E, "E_nms");
 }
-
-/*
-int main(int argc, char **argv) {
-    if(argc == 1) {
-        cout << "Usage: ./edge_boxes image_file" << endl;
-        return -1;
-    }
-
-    Mat im = cv::imread(argv[1]);
-    if(im.data == NULL) {
-        cout << "Error reading image" << endl;
-        return -1;
-    }
-
-    Mat im_e = sf_edges(im);
-    vis_matrix(im_e, "E");
-
-    Mat O = coarse_ori(im_e);
-
-    Mat im_e_nms = edge_nms(im_e, O, 2, 0, 1, 4);
-    vis_matrix(im_e_nms, "E_nms");
-
-    waitKey(-1);
-    return 0;
-}
-*/

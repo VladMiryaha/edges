@@ -440,9 +440,24 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    // setup and run EdgeBoxGenerator
+    EdgeBoxGenerator edgeBoxGen; Boxes boxes;
+    edgeBoxGen._alpha = 0.65; 
+    edgeBoxGen._beta = 0.75;
+    edgeBoxGen._eta = 1;
+    edgeBoxGen._minScore = 0.01;
+    edgeBoxGen._maxBoxes = 10000;
+    edgeBoxGen._edgeMinMag = 0.1;
+    edgeBoxGen._edgeMergeThr = 0.5;
+    edgeBoxGen._clusterMinMag = 0.5;
+    edgeBoxGen._maxAspectRatio = 3;
+    edgeBoxGen._minBoxArea = 1000;
+    edgeBoxGen._gamma = 2;
+    edgeBoxGen._kappa = 1.5;
+
+    double t = (double)getTickCount();
     edge_detect(im, ime, grad_ori);
     //vis_matrix(ime, "E");
-
     transpose(ime, ime_t);
     transpose(grad_ori, grad_ori_t);
 
@@ -459,29 +474,13 @@ int main(int argc, char **argv) {
     
     arrayf V;
 
-    // setup and run EdgeBoxGenerator
-    EdgeBoxGenerator edgeBoxGen; Boxes boxes;
-    edgeBoxGen._alpha = 0.65; 
-    edgeBoxGen._beta = 0.75;
-    edgeBoxGen._eta = 1;
-    edgeBoxGen._minScore = 0.01;
-    edgeBoxGen._maxBoxes = 10000;
-    edgeBoxGen._edgeMinMag = 0.1;
-    edgeBoxGen._edgeMergeThr = 0.5;
-    edgeBoxGen._clusterMinMag = 0.5;
-    edgeBoxGen._maxAspectRatio = 3;
-    edgeBoxGen._minBoxArea = 1000;
-    edgeBoxGen._gamma = 2;
-    edgeBoxGen._kappa = 1.5;
-    cout << "Generating boxes ..." << endl;
-    double t = (double)getTickCount();
     edgeBoxGen.generate( boxes, E, O, V );
     t = ((double)getTickCount() - t)/getTickFrequency();
     cout << "Generated boxes, t = " << t*1000 << " ms" << endl;
 
     // create output bbs
     int n = (int) boxes.size();
-    cout << "Found " << n << " boxes" << endl;
+    //cout << "Found " << n << " boxes" << endl;
     float *bbs = new float[5 * n];
     for(int i=0; i<n; i++) {
         bbs[ i + 0*n ] = (float) boxes[i].c+1;
@@ -492,12 +491,12 @@ int main(int argc, char **argv) {
     }
 
     // show the bbs
-    int n_show = 20;
+    int n_show = 15;
     Mat im_show = im.clone();
     for(int i = 0; i < n_show; i++) {
         Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));
         Scalar color(rand()&255, rand()&255, rand()&255);
-        rectangle(im_show, p1, p2, color, 3);
+        rectangle(im_show, p1, p2, color, 2);
     }
 
     imshow("Edge-Boxes", im_show);
