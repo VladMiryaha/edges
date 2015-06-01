@@ -10,7 +10,7 @@ using namespace boost::filesystem;
 
 int main(int argc, char **argv) {
     if(argc == 1) {
-        cout << "Usage: ./edge_boxes test_image_path" << endl << "Produces results in test_image_path/../results" << endl;
+        cout << "Usage: ./edge_boxes test_image_path" << endl << "Produces results in test_image_path/../results_cpp/" << endl;
         return -1;
     }
 
@@ -73,14 +73,14 @@ int main(int argc, char **argv) {
         }
 
         // show the bbs
-        int n_show = 15;
+        int n_show = 25;
         Mat im_show = im.clone();
         for(int i = 0; i < n_show; i++) {
             Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));
             Scalar color(rand()&255, rand()&255, rand()&255);
             rectangle(im_show, p1, p2, color, 2);
         }
-        filename = path + string("../results/") +  i->path().filename().string();
+        filename = path + string("../results_cpp/") +  i->path().filename().string();
         imwrite(filename, im_show);
         cout << "Finished image " << count << endl;
 
