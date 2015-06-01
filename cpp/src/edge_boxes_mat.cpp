@@ -543,7 +543,6 @@ int main(int argc, char **argv) {
 
     imshow("Edge-Boxes", im_show);
     
-    char choice = 'a';
     while(waitKey(1) != 'q') {}
 
     delete []bbs;
