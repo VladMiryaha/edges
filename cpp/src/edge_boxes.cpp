@@ -10,81 +10,14 @@
 #include <algorithm>
 #include <vector>
 
-#include <opencv2/highgui/highgui.hpp>
-
 #include "edge_detect.h"
+#include "edge_boxes.h"
 
 using namespace std;
 using namespace cv;
 
-#define PI 3.14159265f
 int clamp( int v, int a, int b ) { return v<a?a:v>b?b:v; }
-
-// trivial array class encapsulating pointer arrays
-template <class T> class Array
-{
-public:
-  Array() { _h=_w=0; _x=0; _free=0; }
-  virtual ~Array() { clear(); }
-  void clear() { if(_free) delete [] _x; _h=_w=0; _x=0; _free=0; }
-  void init(int h, int w) { clear(); _h=h; _w=w; _x=new T[h*w](); _free=1; }
-  T& val(size_t c, size_t r) { return _x[c*_h+r]; }
-  int _h, _w; T *_x; bool _free;
-};
-
-// convenient typedefs
-typedef vector<float> vectorf;
-typedef vector<int> vectori;
-typedef Array<float> arrayf;
-typedef Array<int> arrayi;
-
-// bounding box data structures and routines
-typedef struct { int c, r, w, h; float s; } Box;
-typedef vector<Box> Boxes;
 bool boxesCompare( const Box &a, const Box &b ) { return a.s<b.s; }
-float boxesOverlap( Box &a, Box &b );
-void boxesNms( Boxes &boxes, float thr, float eta, int maxBoxes );
-
-// main class for generating edge boxes
-class EdgeBoxGenerator
-{
-public:
-  // method parameters (must be manually set)
-  float _alpha, _beta, _eta, _minScore; int _maxBoxes;
-  float _edgeMinMag, _edgeMergeThr, _clusterMinMag;
-  float _maxAspectRatio, _minBoxArea, _gamma, _kappa;
-
-  // main external routine (set parameters first)
-  void generate( Boxes &boxes, arrayf &E, arrayf &O, arrayf &V );
-
-private:
-  // edge segment information (see clusterEdges)
-  int h, w;                         // image dimensions
-  int _segCnt;                      // total segment count
-  arrayi _segIds;                   // segment ids (-1/0 means no segment)
-  vectorf _segMag;                  // segment edge magnitude sums
-  vectori _segR, _segC;             // segment lower-right pixel
-  vector<vectorf> _segAff;          // segment affinities
-  vector<vectori> _segAffIdx;       // segment neighbors
-
-  // data structures for efficiency (see prepDataStructs)
-  arrayf _segIImg, _magIImg; arrayi _hIdxImg, _vIdxImg;
-  vector<vectori> _hIdxs, _vIdxs; vectorf _scaleNorm;
-  float _scStep, _arStep, _rcStepRatio;
-
-  // data structures for efficiency (see scoreBox)
-  arrayf _sWts; arrayi _sDone, _sMap, _sIds; int _sId;
-
-  // helper routines
-  void clusterEdges( arrayf &E, arrayf &O, arrayf &V );
-  void prepDataStructs( arrayf &E );
-  void scoreAllBoxes( Boxes &boxes );
-  void scoreBox( Box &box );
-  void refineBox( Box &box );
-  void drawBox( Box &box, arrayf &E, arrayf &V );
-};
-
-////////////////////////////////////////////////////////////////////////////////
 
 void EdgeBoxGenerator::generate( Boxes &boxes, arrayf &E, arrayf &O, arrayf &V )
 {
@@ -426,83 +359,4 @@ void boxesNms( Boxes &boxes, float thr, float eta, int maxBoxes )
     for( k=0; k<kept[j].size(); k++ )
       boxes[i++]=kept[j][k];
   sort(boxes.rbegin(),boxes.rend(),boxesCompare);
-}
-
-int main(int argc, char **argv) {
-    if(argc == 1) {
-        cout << "Usage: ./edge_boxes image_file" << endl;
-        return -1;
-    }
-
-    Mat im = imread(argv[1]), ime, grad_ori, ime_t, grad_ori_t;
-    if(im.data == NULL) {
-        cout << "Error reading image" << endl;
-        return -1;
-    }
-
-    // setup and run EdgeBoxGenerator
-    EdgeBoxGenerator edgeBoxGen; Boxes boxes;
-    edgeBoxGen._alpha = 0.65; 
-    edgeBoxGen._beta = 0.75;
-    edgeBoxGen._eta = 1;
-    edgeBoxGen._minScore = 0.01;
-    edgeBoxGen._maxBoxes = 10000;
-    edgeBoxGen._edgeMinMag = 0.1;
-    edgeBoxGen._edgeMergeThr = 0.5;
-    edgeBoxGen._clusterMinMag = 0.5;
-    edgeBoxGen._maxAspectRatio = 3;
-    edgeBoxGen._minBoxArea = 1000;
-    edgeBoxGen._gamma = 2;
-    edgeBoxGen._kappa = 1.5;
-
-    double t = (double)getTickCount();
-    edge_detect(im, ime, grad_ori);
-    //vis_matrix(ime, "E");
-    transpose(ime, ime_t);
-    transpose(grad_ori, grad_ori_t);
-
-    if(!(ime_t.isContinuous() && grad_ori_t.isContinuous())) {
-        cout << "Matrices are not continuous, hence the Array struct will not work" << endl; 
-        return -1;
-    }
-
-    arrayf E; E._x = ime_t.ptr<float>();
-    arrayf O; O._x = grad_ori_t.ptr<float>();
-    Size sz = ime.size();
-    int h = sz.height; O._h=E._h=h;
-    int w = sz.width; O._w=E._w=w;
-    
-    arrayf V;
-
-    edgeBoxGen.generate( boxes, E, O, V );
-    t = ((double)getTickCount() - t)/getTickFrequency();
-    cout << "Generated boxes, t = " << t*1000 << " ms" << endl;
-
-    // create output bbs
-    int n = (int) boxes.size();
-    //cout << "Found " << n << " boxes" << endl;
-    float *bbs = new float[5 * n];
-    for(int i=0; i<n; i++) {
-        bbs[ i + 0*n ] = (float) boxes[i].c+1;
-        bbs[ i + 1*n ] = (float) boxes[i].r+1;
-        bbs[ i + 2*n ] = (float) boxes[i].w;
-        bbs[ i + 3*n ] = (float) boxes[i].h;
-        bbs[ i + 4*n ] = boxes[i].s;
-    }
-
-    // show the bbs
-    int n_show = 15;
-    Mat im_show = im.clone();
-    for(int i = 0; i < n_show; i++) {
-        Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));
-        Scalar color(rand()&255, rand()&255, rand()&255);
-        rectangle(im_show, p1, p2, color, 2);
-    }
-
-    imshow("Edge-Boxes", im_show);
-    
-    char choice = 'a';
-    while(waitKey(1) != 'q') {}
-
-    delete []bbs;
 }

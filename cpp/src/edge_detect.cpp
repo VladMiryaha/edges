@@ -31,7 +31,7 @@ Mat sf_edges(Mat& im) {
     // StructuredForestSettings sf_settings(stride, shrink, out_patch_size, feature_patch_size, patch_smooth, sim_smooth, sim_cells);
     StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
     MultiScaleStructuredForest detector(1, -1, sf_settings);
-    detector.load("/home/samarth/research/gop_1.3/data/sf.dat");
+    detector.load("../external/gop_1.3/data/sf.dat");
     RMatrixXf im_gop_e = detector.detectAndFilter(im_8u);
 
     Mat im_e;
