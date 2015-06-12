@@ -1,4 +1,6 @@
 #include <opencv2/highgui/highgui.hpp>
+#include <vector>
+#include <algorithm>
 
 #include "edge_detect.h"
 #include "edge_boxes.h"
@@ -6,17 +8,9 @@
 using namespace std;
 using namespace cv;
 
-int main(int argc, char **argv) {
-    if(argc == 1) {
-        cout << "Usage: ./edge_boxes image_file" << endl;
-        return -1;
-    }
-
-    Mat im = imread(argv[1]), ime, grad_ori, ime_t, grad_ori_t;
-    if(im.data == NULL) {
-        cout << "Error reading image" << endl;
-        return -1;
-    }
+void get_edge_boxes(Mat &im, vector<vector<float> > &bbs) {
+    
+    Mat ime, grad_ori, ime_t, grad_ori_t;
 
     // setup and run EdgeBoxGenerator
     EdgeBoxGenerator edgeBoxGen; Boxes boxes;
@@ -41,7 +35,6 @@ int main(int argc, char **argv) {
 
     if(!(ime_t.isContinuous() && grad_ori_t.isContinuous())) {
         cout << "Matrices are not continuous, hence the Array struct will not work" << endl; 
-        return -1;
     }
 
     arrayf E; E._x = ime_t.ptr<float>();
@@ -59,28 +52,42 @@ int main(int argc, char **argv) {
     // create output bbs
     int n = (int) boxes.size();
     //cout << "Found " << n << " boxes" << endl;
-    float *bbs = new float[5 * n];
+    bbs.resize(n, vector<float>(5, 0));
     for(int i=0; i<n; i++) {
-        bbs[ i + 0*n ] = (float) boxes[i].c+1;
-        bbs[ i + 1*n ] = (float) boxes[i].r+1;
-        bbs[ i + 2*n ] = (float) boxes[i].w;
-        bbs[ i + 3*n ] = (float) boxes[i].h;
-        bbs[ i + 4*n ] = boxes[i].s;
+        bbs[i][0] = (float) boxes[i].c+1;
+        bbs[i][1] = (float) boxes[i].r+1;
+        bbs[i][2] = (float) boxes[i].w;
+        bbs[i][3] = (float) boxes[i].h;
+        bbs[i][4] = boxes[i].s;
+    }
+}
+
+int main(int argc, char **argv) {
+    if(argc == 1) {
+        cout << "Usage: ./edge_boxes image_file" << endl;
+        return -1;
     }
 
+    Mat im = imread(argv[1]);
+    if(im.data == NULL) {
+        cout << "Error reading image" << endl;
+        return -1;
+    }
+
+    vector<vector<float> > bbs;
+    get_edge_boxes(im, bbs);
+
     // show the bbs
-    int n_show = 15;
+    int n_show = std::min(35, int(bbs.size()));
     Mat im_show = im.clone();
     for(int i = 0; i < n_show; i++) {
-        Point p1(int(bbs[i+0*n]), int(bbs[i+1*n])), p2(int(bbs[i+0*n] + bbs[i+2*n]), int(bbs[i+1*n] + bbs[i+3*n]));
+        Point p1(int(bbs[i][0]), int(bbs[i][1])), p2(int(bbs[i][0] + bbs[i][2]), int(bbs[i][1] + bbs[i][3]));
         Scalar color(rand()&255, rand()&255, rand()&255);
         rectangle(im_show, p1, p2, color, 2);
     }
 
     imshow("Edge-Boxes", im_show);
     
-    char choice = 'a';
     while(waitKey(1) != 'q') {}
-
-    delete []bbs;
+    return 0;
 }
