@@ -22,7 +22,7 @@ void eigen2cv(Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& sr
     _src.copyTo(dst);
 }
 
-Mat sf_edges(Mat& im) {
+Mat sf_edges(const Mat& im) {
     // use GOP library to get Structured Forest Edges
     Mat im_rgb;
     cvtColor(im, im_rgb, CV_BGR2RGB);
@@ -79,7 +79,7 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
     return O;
 }
 
-void edge_detect(Mat &im, Mat &E, Mat &O) {
+void edge_detect(const Mat &im, Mat &E, Mat &O) {
     // get structured forest edges
     E = sf_edges(im);
     E.setTo(0, E < 0.5);

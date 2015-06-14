@@ -19,7 +19,8 @@ if (OPENMP_FOUND)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 find_package(Eigen3 3.2.0 REQUIRED)
-find_package(Boost COMPONENTS system filesystem)
+find_package(Boost COMPONENTS system filesystem python)
+find_package(PythonLibs)
 
 if (UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -Wno-sign-compare -pedantic") 
@@ -39,9 +40,63 @@ target_link_libraries(edge_boxes_demo ${OpenCV_LIBS} ${PROJECT_SOURCE_DIR}/exter
 target_include_directories(edge_boxes_demo PRIVATE "${PROJECT_SOURCE_DIR}/external/gop_1.3/lib/" ${EIGEN3_INCLUDE_DIR})
 
 if(${Boost_FOUND})
-    add_executable(edge_boxes_eval src/edge_boxes_eval.cpp src/edge_boxes.cpp src/edge_detect.cpp src/edge_nms.cpp src/util.cpp)
-    target_link_libraries(edge_boxes_eval ${OpenCV_LIBS} ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/contour/libcontour.a ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/imgproc/libimgproc.a ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/learning/liblearning.a ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/util/libutil.a ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
-    target_include_directories(edge_boxes_eval PRIVATE "${PROJECT_SOURCE_DIR}/external/gop_1.3/lib/" ${EIGEN3_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
+    # Eval 
+    add_executable(edge_boxes_eval
+        src/edge_boxes_eval.cpp
+        src/edge_boxes.cpp
+        src/edge_detect.cpp
+        src/edge_nms.cpp
+        src/util.cpp)
+    target_link_libraries(edge_boxes_eval
+        ${OpenCV_LIBS}
+        ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/contour/libcontour.a
+        ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/imgproc/libimgproc.a
+        ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/learning/liblearning.a
+        ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/util/libutil.a
+        ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY}
+        )
+    target_include_directories(edge_boxes_eval PRIVATE
+        "${PROJECT_SOURCE_DIR}/external/gop_1.3/lib/"
+        ${EIGEN3_INCLUDE_DIR}
+        ${Boost_INCLUDE_DIRS}
+        )
+
+    # Python wrapper
+    if(${PYTHONLIBS_FOUND})
+        add_library(edge_boxes_python SHARED
+            src/edge_boxes_python.cpp
+            src/edge_boxes.cpp
+            src/edge_detect.cpp
+            src/edge_nms.cpp
+            src/util.cpp)
+        set_target_properties(edge_boxes_python
+            PROPERTIES
+            OUTPUT_NAME edge_boxes_python
+            COMPILE_FLAGS "${FASTIDIOUS_FLAGS}"
+            LINK_FLAGS -dynamic
+            PREFIX ""
+            )
+        target_link_libraries(edge_boxes_python
+            ${OpenCV_LIBS}
+            ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/contour/libcontour.a
+            ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/imgproc/libimgproc.a
+            ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/learning/liblearning.a
+            ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/util/libutil.a
+            ${Boost_PYTHON_LIBRARY}
+            ${PYTHON_LIBRARIES}
+            "/home/samarth/libraries/numpy-opencv-converter/build/np_opencv_converter.so"
+            )
+        target_include_directories(edge_boxes_python PRIVATE
+            ${PYTHON_INCLUDE_DIRS}
+            ${Boost_INCLUDE_DIRS}
+            ${EIGEN3_INCLUDE_DIR}
+            "${PROJECT_SOURCE_DIR}/external/gop_1.3/lib/"
+            "/home/samarth/libraries/numpy-opencv-converter/"
+            )
+    else(${PYTHONLIBS_FOUND})
+        MESSAGE(STATUS "Could not find pythonlibs, not compiling edge_boxes_python")
+    endif(${PYTHONLIBS_FOUND})
+
 else(${Boost_FOUND})
     MESSAGE(STATUS "Could not find boost, not compiling edge_boxes_eval")
 endif(${Boost_FOUND})
