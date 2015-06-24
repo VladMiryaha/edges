@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
             return -1;
         }
 
-        edge_detect(im, ime, grad_ori);
+        edge_detect(im, ime, grad_ori, string("/home/samarth/Documents/MATLAB/edges/cpp/external/gop_1.3/data/sf.dat"));
         //vis_matrix(ime, "E");
         transpose(ime, ime_t);
         transpose(grad_ori, grad_ori_t);

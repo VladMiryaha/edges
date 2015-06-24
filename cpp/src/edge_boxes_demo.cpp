@@ -28,7 +28,7 @@ void get_edge_boxes(Mat &im, vector<vector<float> > &bbs) {
     edgeBoxGen._kappa = 1.5;
 
     double t = (double)getTickCount();
-    edge_detect(im, ime, grad_ori);
+    edge_detect(im, ime, grad_ori, string("/home/samarth/Documents/MATLAB/edges/cpp/external/gop_1.3/data/sf.dat"));
     //vis_matrix(ime, "E");
     transpose(ime, ime_t);
     transpose(grad_ori, grad_ori_t);

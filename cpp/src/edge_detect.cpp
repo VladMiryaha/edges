@@ -22,7 +22,7 @@ void eigen2cv(Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& sr
     _src.copyTo(dst);
 }
 
-Mat sf_edges(const Mat& im) {
+Mat sf_edges(const Mat& im, string st_path) {
     // use GOP library to get Structured Forest Edges
     Mat im_rgb;
     cvtColor(im, im_rgb, CV_BGR2RGB);
@@ -31,7 +31,8 @@ Mat sf_edges(const Mat& im) {
     // StructuredForestSettings sf_settings(stride, shrink, out_patch_size, feature_patch_size, patch_smooth, sim_smooth, sim_cells);
     StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
     MultiScaleStructuredForest detector(1, -1, sf_settings);
-    detector.load("../external/gop_1.3/data/sf.dat");
+    //detector.load("/home/samarth/Documents/MATLAB/edges/cpp/external/gop_1.3/data/sf.dat");
+    detector.load(st_path.c_str());
     RMatrixXf im_gop_e = detector.detectAndFilter(im_8u);
 
     Mat im_e;
@@ -79,9 +80,9 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
     return O;
 }
 
-void edge_detect(const Mat &im, Mat &E, Mat &O) {
+void edge_detect(const Mat &im, Mat &E, Mat &O, string st_path) {
     // get structured forest edges
-    E = sf_edges(im);
+    E = sf_edges(im, st_path);
     E.setTo(0, E < 0.5);
     //vis_matrix(E, "E");
     // get edge orientation
