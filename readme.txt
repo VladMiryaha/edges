@@ -41,74 +41,24 @@ Please read license.txt for more info.
 
 ###################################################################
 
-3. Installation.
+FOR MORE DETAILS SEE https://github.com/pdollar/edges
 
-a) This code is written for the Matlab interpreter (tested with versions R2013a-2013b) and requires the Matlab Image Processing Toolbox. 
+*** Fork by Samarth Brahmbhatt
 
-b) Additionally, Piotr's Matlab Toolbox (version 3.26 or later) is also required. It can be downloaded at:
- http://vision.ucsd.edu/~pdollar/toolbox/doc/index.html.
+This fork adds a C++ and Python wrapper for structured edges and edge-boxes object proposals (see papers above), removing the Matlab dependency. To keep the code clean and reduce effort I used the C++ implementation of structured random forest edges from http://www.philkr.net/home/gop, included in ./cpp/external.
 
-c) Next, please compile mex code from within Matlab (note: win64/linux64 binaries included):
-  mex private/edgesDetectMex.cpp -outdir private [OMPPARAMS]
-  mex private/edgesNmsMex.cpp    -outdir private [OMPPARAMS]
-  mex private/spDetectMex.cpp    -outdir private [OMPPARAMS]
-  mex private/edgeBoxesMex.cpp   -outdir private
-Here [OMPPARAMS] are parameters for OpenMP and are OS and compiler dependent.
-  Windows:  [OMPPARAMS] = '-DUSEOMP' 'OPTIMFLAGS="$OPTIMFLAGS' '/openmp"'
-  Linux V1: [OMPPARAMS] = '-DUSEOMP' CFLAGS="\$CFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
-  Linux V2: [OMPPARAMS] = '-DUSEOMP' CXXFLAGS="\$CXXFLAGS -fopenmp" LDFLAGS="\$LDFLAGS -fopenmp"
-To compile without OpenMP simply omit [OMPPARAMS]; note that code will be single threaded in this case.
+They Python wrapper required Boost::python and my fork of Sudeep Pillai's numpy-opencv-converter (see https://github.com/samarth-robo/numpy-opencv-converter).
 
-d) Add edge detection code to Matlab path (change to current directory first): 
- >> addpath(pwd); savepath;
+-- Usage:
+1. For structured random forest edges use the function `edge_detect(const Mat &im, Mat &E, Mat &O, string st_path)` in `./cpp/src/edge_detect.cpp`. `st_path` is the full path to the trained structured random forest, which can be obtained at http://googledrive.com/host/0B6qziMs8hVGieFg0UzE0WmZaOW8/code/gop_data.zip (link taken from http://www.philkr.net/home/gop)
 
-e) Finally, optionally download the BSDS500 dataset (necessary for training/evaluation):
- http://www.eecs.berkeley.edu/Research/Projects/CS/vision/grouping/
- After downloading BSR/ should contain BSDS500, bench, and documentation.
+2. For the C++ wrapper of edge-boxes see the file `.cpp/src/edge_boxes_demo.cpp`
 
-f) A fully trained edge model for RGB images is available as part of this release. Additional models are available online, including RGBD/D/RGB models trained on the NYU depth dataset and a larger more accurate BSDS model.
-
-###################################################################
-
-4. Getting Started.
-
- - Make sure to carefully follow the installation instructions above.
- - Please see "edgesDemo.m", "edgeBoxesDemo" and "spDemo.m" to run demos and get basic usage information.
- - For a detailed list of functionality see "Contents.m".
-
-###################################################################
-
-5. History.
-
-Version NEW
- - now hosting on github (https://github.com/pdollar/edges)
- - suppress Mac warnings, added Mac binaries
- - edgeBoxes: added adaptive nms variant described in arXiv15 paper
-
-Version 3.01 (09/08/2014)
- - spAffinities: minor fix (memory initialization)
- - edgesDetect: minor fix (multiscale / multiple output case)
-
-Version 3.0 (07/23/2014)
- - added Edge Boxes code corresponding to ECCV paper
- - added Sticky Superpixels code
- - edge detection code unchanged
-
-Version 2.0 (06/20/2014)
- - second version corresponding to arXiv paper
- - added sharpening option
- - added evaluation and visualization code
- - added NYUD demo and sweep support
- - various tweaks/improvements/optimizations
-
-Version 1.0 (11/12/2013)
- - initial version corresponding to ICCV paper
-
-###################################################################
-
-6. Fork by Samarth Brahmbhatt
-
-This fork was made to:
- - Test the performance of edge-boxes with Canny edges
- - Make a C++ implementation of edge-boxes with Canny edges, using OpenCV for util tasks
- - Include existing C++ implementation of structured random forest edges at http://www.philkr.net/home/gop, and integrate it with the C++ implementation of edge-boxes to construct a fully working C++ implementation of edge-boxes
+3. For the Python wrapper, build the `cpp` directory using `.cpp/CMakeLists.txt` to get `edge_boxes_python.so` in the `build` folder. Add the `build` folder to your `PYTHONPATH` and then:
+`
+import cv2, os
+from edge_boxes_python import edge_boxes_python
+eb = edge_boxes_python(os.path.expanduser('~') + '/Documents/MATLAB/edges/cpp/external/gop_1.3/data/sf.dat') # string is path to the trained structured random forest, see 1.
+im = cv2.imread('test.jpg')
+bbs = eb.get_edge_boxes(im)
+`
