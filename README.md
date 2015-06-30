@@ -19,8 +19,10 @@ They Python wrapper required Boost::python and my fork of Sudeep Pillai's numpy-
 2. For the C++ wrapper of edge-boxes see the file `.cpp/src/edge_boxes_demo.cpp`
 
 3. For the Python wrapper, build the `cpp` directory using `.cpp/CMakeLists.txt` to get `edge_boxes_python.so` in the `build` folder. Add the `build` folder to your `PYTHONPATH` and then:
-    import cv2, os
-    from edge_boxes_python import edge_boxes_python
-    eb = edge_boxes_python(os.path.expanduser('~') + '/Documents/MATLAB/edges/cpp/external/gop_1.3/data/sf.dat') # string is path to the trained structured random forest, see 1.
-    im = cv2.imread('test.jpg')
-    bbs = eb.get_edge_boxes(im)
+```python
+import cv2, os
+from edge_boxes_python import edge_boxes_python
+eb = edge_boxes_python(os.path.expanduser('~') + '/Documents/MATLAB/edges/cpp/external/gop_1.3/data/sf.dat') # string is path to the trained structured random forest, see 1.
+im = cv2.imread('test.jpg')
+bbs = eb.get_edge_boxes(im)
+```
