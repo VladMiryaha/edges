@@ -9,7 +9,7 @@ Please read license.txt for more info.
 
 # This fork (C++ and Python wrappers)
 
-This fork adds a C++ and Python wrapper for structured edges and edge-boxes object proposals (see papers above), removing the Matlab dependency. To keep the code clean and reduce effort I used the C++ implementation of structured random forest edges from Phillip Krähenbühl (http://www.philkr.net/home/gop), included in ./cpp/external.
+This fork adds a C++ and Python wrapper for structured edges and edge-boxes object proposals (see papers above), removing the Matlab dependency. To keep the code clean and reduce effort I used the C++ implementation of structured random forest edges from Philipp Krähenbühl (http://www.philkr.net/home/gop), included in ./cpp/external.
 
 The Python wrapper requires Boost::python and my fork of Sudeep Pillai's numpy-opencv-converter (see https://github.com/samarth-robo/numpy-opencv-converter).
 
