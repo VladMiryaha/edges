@@ -1,6 +1,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 #include "edge_detect.h"
 #include "edge_boxes.h"
@@ -63,8 +64,8 @@ void get_edge_boxes(Mat &im, vector<vector<float> > &bbs) {
 }
 
 int main(int argc, char **argv) {
-    if(argc == 1) {
-        cout << "Usage: ./edge_boxes image_file" << endl;
+    if(argc != 3) {
+        cout << "Usage: ./edge_boxes image_file num_boxes_to_show" << endl;
         return -1;
     }
 
@@ -74,11 +75,13 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    int n_show = stoi(argv[2], NULL);
+
     vector<vector<float> > bbs;
     get_edge_boxes(im, bbs);
 
     // show the bbs
-    int n_show = std::min(35, int(bbs.size()));
+    n_show = std::min(n_show, int(bbs.size()));
     Mat im_show = im.clone();
     for(int i = 0; i < n_show; i++) {
         Point p1(int(bbs[i][0]), int(bbs[i][1])), p2(int(bbs[i][0] + bbs[i][2]), int(bbs[i][1] + bbs[i][3]));
