@@ -30,10 +30,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DEIGEN_DONT_PARALLELIZE")
 include_directories(${OpenCV_INCLUDE_DIRS} "${PROJECT_SOURCE_DIR}/include")
 
 add_definitions(-DUSEOMP)
+set(CVMATIO_PATH "/home/samarth/Documents/MATLAB/cvmatio/")
+set(NUMPY_OPENCV_CONVERTER_PATH "/home/samarth/libraries/numpy-opencv-converter/")
 
 add_executable(edge_boxes_mat src/edge_boxes_mat.cpp src/edge_nms.cpp src/util.cpp)
 target_link_libraries(edge_boxes_mat ${OpenCV_LIBS} /home/samarth/Documents/MATLAB/cvmatio/lib/libcvmatio.so)
-target_include_directories(edge_boxes_mat PRIVATE "/home/samarth/Documents/MATLAB/cvmatio/include")
+target_include_directories(edge_boxes_mat PRIVATE "${CVMATIO_PATH}/include")
 
 add_executable(edge_boxes_demo src/edge_boxes_demo.cpp src/edge_boxes.cpp src/edge_detect.cpp src/edge_nms.cpp src/util.cpp)
 target_link_libraries(edge_boxes_demo ${OpenCV_LIBS} ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/contour/libcontour.a ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/imgproc/libimgproc.a ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/learning/liblearning.a ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/util/libutil.a)
@@ -84,14 +86,14 @@ if(${Boost_FOUND})
             ${PROJECT_SOURCE_DIR}/external/gop_1.3/build/lib/util/libutil.a
             ${Boost_PYTHON_LIBRARY}
             ${PYTHON_LIBRARIES}
-            "/home/samarth/libraries/numpy-opencv-converter/build/np_opencv_converter.so"
+            "${NUMPY_OPENCV_CONVERTER_PATH}/build/np_opencv_converter.so"
             )
         target_include_directories(edge_boxes_python PRIVATE
             ${PYTHON_INCLUDE_DIRS}
             ${Boost_INCLUDE_DIRS}
             ${EIGEN3_INCLUDE_DIR}
             "${PROJECT_SOURCE_DIR}/external/gop_1.3/lib/"
-            "/home/samarth/libraries/numpy-opencv-converter/"
+            ${NUMPY_OPENCV_CONVERTER_PATH}
             )
     else(${PYTHONLIBS_FOUND})
         MESSAGE(STATUS "Could not find pythonlibs, not compiling edge_boxes_python")
