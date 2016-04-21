@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "edge_detect.h"
+//#include "edge_detect.h"
 #include "edge_boxes.h"
 
 using namespace std;

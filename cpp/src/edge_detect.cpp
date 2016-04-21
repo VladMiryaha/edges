@@ -7,13 +7,16 @@
 // Modified by Samarth Brahmbhatt to remove MEX parts
 
 #include <opencv2/highgui/highgui.hpp>
-
 #include "contour/structuredforest.h"
 #include "imgproc/image.h"
 #include "edge_detect.h"
 
 using namespace std;
 using namespace cv;
+
+string detector_name;
+StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
+MultiScaleStructuredForest detector(1, -1, sf_settings);
 
 // function to convert Eigen matrix to OpenCV Mat
 template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
@@ -75,10 +78,31 @@ Mat coarse_ori(Mat E) { // get coarse orientation, see Piotr Dollar's edgesDetec
     return O;
 }
 
-void edge_detect(const Mat &im, Mat &E, Mat &O, MultiScaleStructuredForest detector) {
+bool edge_detect(const Mat &im, Mat &E, Mat &O, string model_path) {
+
+  // Load model
+  int model_id = -1;
+  if (model_path == detector_name)  model_id = 0;
+//  printf("Model id is %d\n", model_id);
+  if (model_id != 0)
+  {
+      ifstream ifs(model_path.c_str());
+      if (ifs.fail())
+      {
+        printf("Structure edge model file does not exist.\n");
+        return false;
+      }
+      ifs.close();
+
+      printf("loading model: %s\n", model_path.c_str());
+      detector.load(model_path.c_str());
+      detector_name = model_path;
+      model_id = 0;
+  }
+
     // get structured forest edges
     E = sf_edges(im, detector);
-    E.setTo(0, E < 0.5);
+//    E.setTo(0, E < 0.5);
     //vis_matrix(E, "E");
     // get edge orientation
     O = coarse_ori(E);
@@ -86,4 +110,5 @@ void edge_detect(const Mat &im, Mat &E, Mat &O, MultiScaleStructuredForest detec
     // NMS on edges
      E = edge_nms(E, O, 2, 0, 1, 4);
     //vis_matrix(E, "E_nms");
+     return true;
 }

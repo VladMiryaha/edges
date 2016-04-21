@@ -18,10 +18,6 @@
 using namespace std;
 using namespace cv;
 
-static string detector_name;
-static StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
-static MultiScaleStructuredForest detector(1, -1, sf_settings);
-
 int clamp( int v, int a, int b ) { return v<a?a:v>b?b:v; }
 bool boxesCompare( const Box &a, const Box &b ) { return a.s<b.s; }
 
@@ -381,24 +377,6 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
   string model_path = str;
   mxFree(str);
 
-  // Load model
-  int model_id = -1;
-  if (model_path == detector_name)  model_id = 0;
-  if (model_id != 0)
-  {
-      ifstream ifs(model_path.c_str());
-      if (ifs.fail())
-      {
-          mexErrMsgTxt("Structure edge model file does not exist.");
-      }
-      ifs.close();
-
-      printf("loading model %s: ", model_path.c_str());
-      detector.load(model_path.c_str());
-      detector_name = model_path;
-      model_id = 0;
-  }
-
   // setup and run EdgeBoxGenerator
   EdgeBoxGenerator edgeBoxGen; Boxes boxes;
   edgeBoxGen._alpha = float(mxGetScalar(pr[2]));
@@ -435,12 +413,19 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
 
   // edge detect
   cv::Mat im_edge, im_edge_t, grad_ori, grad_ori_t;
-  edge_detect(im_bgr, im_edge, grad_ori, detector);
+//  im_bgr = imread("/home/shangxuan/visenzeWork/data/Badcases_Eval/query/ALGO-283_ZCSE137_OUT_LG.jpg");
+//  cv::resize(im_bgr, im_bgr, cv::Size(320, 320));
+//  cv::Mat im_bgr1(320, 320, CV_8UC3, Scalar(0,0,0));
+  if ( !edge_detect(im_bgr, im_edge, grad_ori, model_path) )
+  {
+      printf("Edgebox failed.\n");
+  }
+
   transpose(im_edge, im_edge_t);
   transpose(grad_ori, grad_ori_t);
   if(!(im_edge_t.isContinuous() && grad_ori_t.isContinuous()))
   {
-      cout << "Matrices are not continuous, hence the Array struct will not work" << endl;
+      printf("Matrices are not continuous, hence the Array struct will not work\n");
   }
 
 #if 0
