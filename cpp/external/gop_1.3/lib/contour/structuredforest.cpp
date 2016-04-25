@@ -34,6 +34,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <cstdio>
+#include "edge_detect.h"
 
 StructuredForestSettings::StructuredForestSettings( int stride, int shrink, int out_patch_size, int feature_patch_size, int patch_smooth, int sim_smooth, int sim_cells ):stride(stride),shrink(shrink),out_patch_size(out_patch_size),feature_patch_size(feature_patch_size),patch_smooth(patch_smooth),sim_smooth(sim_smooth),sim_cells(sim_cells) {}
 
@@ -55,7 +56,10 @@ RMatrixXf StructuredForest::detect(const Image8u & rgb_im) const {
 	
 	RMatrixXf r = RMatrixXf::Zero( pH, pW );
 	
-	SFFeatures f( rgb_im );
+    VTimer t;
+    t.Restart();
+
+    SFFeatures f( rgb_im );
 	int s = f.x_[1] - f.x_[0];
 	float v = 1.5*s*s / (1.0*Rp*Rp*forest_.nTrees()/2);
 // 	float v = 0.5*s*s / (1.0*Rp*Rp*forest_.nTrees()/2);
@@ -72,7 +76,11 @@ RMatrixXf StructuredForest::detect(const Image8u & rgb_im) const {
 			}
 		}
 	}
-	RMatrixXf rr = 1*r;
+
+    t.Stop();
+    std::cout << "detect: " << t.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
+
+    RMatrixXf rr = 1*r;
 	tentFilter( rr.data(), r.data(), r.cols(), r.rows(), 1, 1 );
 	rr.array() = rr.array().min(1.f).sqrt();
 	return rr.block( Rp, Rp, rgb_im.H(), rgb_im.W() );
@@ -246,12 +254,20 @@ void StructuredForest::compress() {
 	}
 }
 RMatrixXf MultiScaleStructuredForest::detect( const Image8u & rgb_im ) const {
-	RMatrixXf r = RMatrixXf::Zero( rgb_im.H(), rgb_im.W() );
+
+    VTimer t;
+    t.Restart();
+
+    RMatrixXf r = RMatrixXf::Zero( rgb_im.H(), rgb_im.W() );
 	float scales[] = {0.5,1.0,2.0};
 	for( float s: scales ) {
 		Image8u im = resize( rgb_im, s*rgb_im.W(), s*rgb_im.H() );
 		r += resize( StructuredForest::detect( im ), rgb_im.W(), rgb_im.H() );
 	}
+
+    t.Stop();
+    std::cout << "edge detector: " << t.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
+
 	return r.array() / 3.;
 }
 

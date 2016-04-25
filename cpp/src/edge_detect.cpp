@@ -16,7 +16,7 @@ using namespace cv;
 
 string detector_name;
 StructuredForestSettings sf_settings(2, 2, 16, 32, 2, 8, 5);
-MultiScaleStructuredForest detector(1, -1, sf_settings);
+StructuredForest detector(1, -1, sf_settings);
 
 // function to convert Eigen matrix to OpenCV Mat
 template<typename _Tp, int _rows, int _cols, int _options, int _maxRows, int _maxCols>
@@ -25,13 +25,19 @@ void eigen2cv(Eigen::Matrix<_Tp, _rows, _cols, _options, _maxRows, _maxCols>& sr
     _src.copyTo(dst);
 }
 
-Mat sf_edges(const Mat& im, MultiScaleStructuredForest detector) {
+Mat sf_edges(const Mat& im, StructuredForest detector) {
     // use GOP library to get Structured Forest Edges
     Mat im_rgb;
     cvtColor(im, im_rgb, CV_BGR2RGB);
     Image8u im_8u(im_rgb.data, im_rgb.cols, im_rgb.rows, im_rgb.channels());
 
+    VTimer t;
+    t.Restart();
+
     RMatrixXf im_gop_e = detector.detectAndFilter(im_8u);
+
+    t.Stop();
+    std::cout << "edge detector: " << t.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
 
     Mat im_e;
     eigen2cv(im_gop_e, im_e);
@@ -101,11 +107,18 @@ bool edge_detect(const Mat &im, Mat &E, Mat &O, string model_path) {
   }
 
     // get structured forest edges
+    VTimer t;
+    t.Restart();
+    // TODO: 200ms, This is bottleneck
     E = sf_edges(im, detector);
-//    E.setTo(0, E < 0.5);
+    t.Stop();
+    std::cout << "SF_Edges: " << t.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
+
+    E.setTo(0, E < 0.5);
     //vis_matrix(E, "E");
     // get edge orientation
     O = coarse_ori(E);
+
     //vis_matrix(O, "O");
     // NMS on edges
      E = edge_nms(E, O, 2, 0, 1, 4);

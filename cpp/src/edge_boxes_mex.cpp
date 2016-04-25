@@ -18,12 +18,22 @@
 using namespace std;
 using namespace cv;
 
+
 int clamp( int v, int a, int b ) { return v<a?a:v>b?b:v; }
 bool boxesCompare( const Box &a, const Box &b ) { return a.s<b.s; }
 
 void EdgeBoxGenerator::generate( Boxes &boxes, arrayf &E, arrayf &O, arrayf &V )
 {
-  clusterEdges(E,O,V); prepDataStructs(E); scoreAllBoxes(boxes);
+    VTimer t;
+
+  clusterEdges(E,O,V);
+  prepDataStructs(E);
+  t.Restart();
+    // TODO: Bottleneck 400ms
+  scoreAllBoxes(boxes);
+  t.Stop();
+  std::cout << "ScoreAllBoxes: " << t.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
+  std::cout << "Boxes number: " << boxes.size() << std::endl;
 }
 
 void EdgeBoxGenerator::clusterEdges( arrayf &E, arrayf &O, arrayf &V )
@@ -318,6 +328,8 @@ void EdgeBoxGenerator::scoreAllBoxes( Boxes &boxes )
     }
   }
 
+   cout<<"Score boxes number: "<<boxes.size()<<endl;
+
   // score all boxes, refine top candidates, perform nms
   int i, k=0, m = int(boxes.size());
   for( i=0; i<m; i++ ) {
@@ -367,6 +379,9 @@ void boxesNms( Boxes &boxes, float thr, float eta, int maxBoxes )
 // Matlab entry point: bbs = mex( image, edge_detect_model_path, prm1, prm2, ... )
 void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
 {
+    VTimer t0;
+  VTimer t1;
+  std::cout << "\n";
   // check and get inputs
   if(nr != 14) mexErrMsgTxt("Fourteen inputs required.");
   if(nl > 2) mexErrMsgTxt("At most two outputs expected.");
@@ -404,22 +419,30 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
   cv::Mat imB(1, area, cv::DataType<uint8>::type, img_rgb + 2 * area);
 
   // opencv is BGR and matlab is column-major order
+  t1.Restart();
   cv::Mat imA[3];
   imA[2] = imR.reshape(1,width).t();
   imA[1] = imG.reshape(1,width).t();
   imA[0] = imB.reshape(1,width).t();
   cv::Mat im_bgr;
   cv::merge(imA,3,im_bgr);
+  t1.Stop();
+  std::cout << "Reshape time: " << t1.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
+
 
   // edge detect
   cv::Mat im_edge, im_edge_t, grad_ori, grad_ori_t;
 //  im_bgr = imread("/home/shangxuan/visenzeWork/data/Badcases_Eval/query/ALGO-283_ZCSE137_OUT_LG.jpg");
 //  cv::resize(im_bgr, im_bgr, cv::Size(320, 320));
 //  cv::Mat im_bgr1(320, 320, CV_8UC3, Scalar(0,0,0));
+//  TODO: Takes 200ms
+  t1.Restart();
   if ( !edge_detect(im_bgr, im_edge, grad_ori, model_path) )
   {
       printf("Edgebox failed.\n");
   }
+  t1.Stop();
+  std::cout << "Edge detect time: " << t1.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
 
   transpose(im_edge, im_edge_t);
   transpose(grad_ori, grad_ori_t);
@@ -428,7 +451,8 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
       printf("Matrices are not continuous, hence the Array struct will not work\n");
   }
 
-#if 0
+
+#if 1
   cout<<"Image edge width and height: "<<im_edge.rows <<" " <<im_edge.cols <<endl;
   ofstream myfile;
   myfile.open("test_edge.csv");
@@ -436,14 +460,20 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
   myfile.close();
 #endif
 
+
   arrayf E; E._x = im_edge_t.ptr<float>();
   arrayf O; O._x = grad_ori_t.ptr<float>();
   Size sz = im_edge.size();
   int h = sz.height; O._h=E._h=h;
   int w = sz.width; O._w=E._w=w;
+  std::cout << "H: " << h << " W: " << w << std::endl;
   arrayf V;
 
+  // TODO: 400ms
+  t1.Restart();
   edgeBoxGen.generate( boxes, E, O, V );
+  t1.Stop();
+  std::cout << "Gen time: " << t1.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
 
   // create output bbs and output to Matlab
   int n = (int) boxes.size();
@@ -456,4 +486,9 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
     bbs[ i + 3*n ] = (float) boxes[i].h;
     bbs[ i + 4*n ] = boxes[i].s;
   }
+
+
+
+  t0.Stop();
+  std::cout << "Full time: " << t0.GetDuration(TimeResolution::MICRO_SEC) << std::endl;
 }

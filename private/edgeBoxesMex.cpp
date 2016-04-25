@@ -433,6 +433,7 @@ void mexFunction( int nl, mxArray *pl[], int nr, const mxArray *pr[] )
   arrayf O; O._x = (float*) mxGetData(pr[1]);
   int h = (int) mxGetM(pr[0]); O._h=E._h=h;
   int w = (int) mxGetN(pr[0]); O._w=E._w=w;
+  std::cout << "H: " << h << " W: " << w << std::endl;
 
   // optionally create memory for visualization
   arrayf V; if( nl>1 ) {
